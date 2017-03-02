@@ -1,0 +1,4 @@
+SlaveHostName	IPAddress		SourcePortNumber	RegistrationDate
+Slave 1		/127.0.0.1:53279	53279			2017-14-01
+Slave 2		/127.0.0.1:53280	53280			2017-14-01
+Slave 3		/127.0.0.1:53281	53281			2017-14-01
