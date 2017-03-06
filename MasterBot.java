@@ -259,10 +259,6 @@ public class MasterBot extends Thread
 												successfulDisconnects++;
 												temp.remove(j);
 										}
-										else
-										{
-											System.out.println("No such connection to " + targetIPAddress + "available. No disconnections processed.");
-										}
 									}
 								}
 							}
@@ -291,10 +287,6 @@ public class MasterBot extends Thread
 													currentConnectionCount--;
 												}
 										}
-										else
-										{
-											System.out.println("No such connection to " + targetIPAddress + "available. No disconnections processed.");
-										}
 									}
 								}
 							}
@@ -320,10 +312,6 @@ public class MasterBot extends Thread
 											b.disconnect(temp.get(j), targetIPAddress, targetPort);
 											successfulDisconnects++;
 											temp.remove(j);	
-										}
-										else
-										{
-											System.out.println("No such connection to " + targetIPAddress + "available. No disconnections processed.");
 										}
 									}
 								}
@@ -354,10 +342,6 @@ public class MasterBot extends Thread
 												temp.remove(j);
 												connectionCount--;
 											}
-										}
-										else
-										{
-											System.out.println("No such connection to " + targetIPAddress + "available. No disconnections processed.");
 										}
 									}
 								}
