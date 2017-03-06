@@ -34,7 +34,7 @@ public class SlaveBot
 			try
 			{
 				Socket client = new Socket(ip, port);
-				System.out.println("Connected To Server : " + client.getRemoteSocketAddress());
+				System.out.println("> Connected To Server : " + client.getRemoteSocketAddress() + "\n>");
 			} catch(IOException e)
 			{
 				e.printStackTrace();
@@ -47,7 +47,7 @@ public class SlaveBot
 			Scanner reader = new Scanner(System.in);
 			String line = reader.nextLine();
 			String[] dataArray = line.split("\\s+");
-			
+			System.out.print("> ");
 //----------loop if no data is entered
 			if (line.equals("")) 
 			{
@@ -84,7 +84,6 @@ public class SlaveBot
 				System.out.println("in else");
 				continue;
 			}
-			
 			try
 			{
 				Socket client = new Socket(ip, port);
