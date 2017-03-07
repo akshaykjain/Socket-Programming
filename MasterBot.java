@@ -160,6 +160,11 @@ public class MasterBot extends Thread
 						targetPort = Integer.parseInt(dataArray[3]);
 						connectionCount = Integer.parseInt(dataArray[4]);
 					}
+//------------------for invalid formats
+					else if(dataArray.length < 4)
+					{
+						System.out.println("Invalid Format. \n Connect Format = Example : connect all www.sjsu.edu 80.");
+					}
 //------------------if targetPort is invalid
 					if(targetPort!=80)
 					{
@@ -231,6 +236,11 @@ public class MasterBot extends Thread
 						targetPort = Integer.parseInt(dataArray[3]);
 						connectionCount = Integer.parseInt(dataArray[4]);
 						connectionCountProvided = true;
+					}
+//------------------for invalid formats
+					else if(dataArray.length < 4)
+					{
+						System.out.println("Invalid Format. \n Connect Format = Example : connect all www.sjsu.edu 80.");
 					}
 //------------------if targetPort is invalid
 					if(targetPort!=80)
