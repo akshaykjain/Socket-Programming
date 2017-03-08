@@ -51,7 +51,7 @@ public class MasterBot extends Thread
 				data = ss.getPort() + "\t\t";
 				bw.write(data);
 
-				data = "\t" + new SimpleDateFormat("yyyy-mm-dd").format(date);
+				data = "\t" + new SimpleDateFormat("YYYY-MM-dd").format(date);
 				bw.write(data);
 
 				bw.flush();
