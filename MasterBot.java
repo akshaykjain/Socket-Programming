@@ -104,7 +104,7 @@ public class MasterBot extends Thread
 			}
 		}
 //------command line implementation 
-		System.out.println("> Welcome to shell \n Type 'help' for more details.");
+		System.out.println("> Welcome to shell. \n Type 'help' for more details.");
 		while (true) 
 		{
 			try 
@@ -124,7 +124,7 @@ public class MasterBot extends Thread
 					System.out.println("List of available commands:");
 					System.out.println("1) list");
 					System.out.println("2) connect (Example	: connect all www.sjsu.edu 80 10(optional) keepalive(optional) url=/#q=(optional)).");
-					System.out.println("3) disconnect (Example : disconnect all www.sjsu.edu 80 10(optional))");
+					System.out.println("3) disconnect (Example 	: disconnect all www.sjsu.edu 80 10(optional))");
 					System.out.println("4) exit \n");
 					continue;
 				}
@@ -147,6 +147,7 @@ public class MasterBot extends Thread
 					url = null;
 					successfulConnects = 0;
 					//if no slaves are connected
+
 					if(noOfSlavesConnected == 0)
 					{
 						System.out.println("No Slaves are currently connected to the server.\n");
@@ -154,8 +155,20 @@ public class MasterBot extends Thread
 					}
 					
 					String[] dataArray = commandLine.split("\\s+");
+					//invalid format
+					if(dataArray.length == 4 && dataArray[3].contains("keepalive"))
+					{
+						System.out.println("Invalid Format. Type 'help' for more details.\n");
+						continue;
+					}
+					//invalid format
+					else if(dataArray.length == 4 && dataArray[3].contains("url"))
+					{
+						System.out.println("Invalid Format. Type 'help' for more details.\n");
+						continue;
+					}
 					//if number of connections is not defined (Example : connect all www.sjsu.edu 80)
-					if(dataArray.length == 4)
+					else if(dataArray.length == 4)
 					{
 						slaveIPAddress = dataArray[1];
 						targetIPAddress = dataArray[2];
