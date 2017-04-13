@@ -14,6 +14,11 @@ public class MasterBot extends Thread
 	static ArrayList<Socket> clientList = new ArrayList<>();
 	static SlaveBot b = new SlaveBot();
 //--constructor--------------------------------------------------------------------------------------------------------------------------------
+	public MasterBot()
+	{
+		
+	}
+//--constructor--------------------------------------------------------------------------------------------------------------------------------
 	public MasterBot(int port) throws IOException 
 	{
 		ms = new ServerSocket(port);
@@ -74,6 +79,32 @@ public class MasterBot extends Thread
 			}
 		}
 	}
+//--printIpScan--------------------------------------------------------------------------------------------------------------------------------
+	void printIpScan (ArrayList<String> listOfResponsdedTarget)
+	{
+		if(listOfResponsdedTarget.size() == 0)
+		{
+			System.out.println("No servers responded to the ping request.");
+		}
+		else
+		{
+			System.out.println(listOfResponsdedTarget);
+		}
+		System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
+	}
+//--printtcpPoetScan---------------------------------------------------------------------------------------------------------------------------
+	void printtcpPortScan (ArrayList<String> activePorts)
+	{
+		if(activePorts.size() == 0)
+		{
+			System.out.println("No servers responded to the ping request.");
+		}
+		else
+		{
+			System.out.println(activePorts);
+		}
+		System.out.println("Total Number of Active Ports : " + activePorts.size());
+	}	
 //--main---------------------------------------------------------------------------------------------------------------------------------------
 	public static void main(String[] args) 
 	{
@@ -123,9 +154,11 @@ public class MasterBot extends Thread
 					System.out.println("*********************Welcome to Shell Help*********************");
 					System.out.println("List of available commands:");
 					System.out.println("1) list");
-					System.out.println("2) connect (Example	: connect all www.sjsu.edu 80 10(optional) keepalive(optional) url=/#q=(optional)).");
-					System.out.println("3) disconnect (Example 	: disconnect all www.sjsu.edu 80 10(optional))");
-					System.out.println("4) exit \n");
+					System.out.println("2) connect (Example	: connect all www.sjsu.edu 80 10(optional) keepalive(optional) url=/#q=(optional))");
+					System.out.println("3) disconnect (Example	: disconnect all www.sjsu.edu 80 10(optional))");
+					System.out.println("4) ipscan (Example	: ipscan all 64.233.160.0-64.233.191.255(ip address range of google))");
+					System.out.println("5) tcpportscan (Example	: tcpportscan all www.google.com 6000-7000)");
+					System.out.println("6) exit \n");
 					continue;
 				}
 //--------------list function logic
@@ -438,6 +471,118 @@ public class MasterBot extends Thread
 					System.out.println("Shell Terminated.");
 					System.exit(0);
 				}
+//--------------ipscan function logic
+				else if (commandLine.startsWith("ipscan"))
+				{
+					//String array to capture arguments
+					String[] dataArray = commandLine.split("\\s+");
+					
+					String range = null;
+					
+					if(noOfSlavesConnected == 0)
+					{
+						System.out.println("No Slaves are currently connected to the server.\n");
+						continue;
+					}
+					
+					//if number of arguments are invalid
+					if(dataArray.length != 3)
+					{
+						System.out.println("Invalid Format. Type 'help' for more details.\n");
+						continue;
+					}
+					
+					if(dataArray.length == 3)
+					{
+						slaveIPAddress = dataArray[1];
+						range = dataArray[2];		
+						System.out.println("ipscan is running in background.");
+						System.out.println("Results will be posted soon.....");
+						System.out.println("Meanwhile, other commands can be used. Type 'help' for available commands.");
+					}
+					//for all slaves (Example : ipscan all 64.233.162.127-64.233.162.152)
+					if(slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						for(int i=0; i<clientList.size(); i++)
+						{
+							b.ipScan(clientList.get(i), range);
+						}	
+					}
+					//for specific slaves (Example : ipscan 127.0.0.1:52317 64.233.162.127-64.233.162.152)
+					if(!slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						String line;
+						for(int i=0; i<clientList.size(); i++)
+						{
+							line = "/"+slaveIPAddress;
+							if(line.equalsIgnoreCase(clientList.get(i).getRemoteSocketAddress().toString()))
+							{
+								b.ipScan(clientList.get(i), range);
+							}
+							else
+							{
+								System.out.println("No such slave is connected to the Master.");
+							}
+						}
+					}
+					continue;
+				}
+//--------------ipscan function logic
+				else if (commandLine.startsWith("tcpportscan"))
+				{
+					//String array to capture arguments
+					String[] dataArray = commandLine.split("\\s+");
+					String portRange = null;
+					
+					if(noOfSlavesConnected == 0)
+					{
+						System.out.println("No Slaves are currently connected to the server.\n");
+						continue;
+					}
+					//for invalid commands
+					if(dataArray.length != 4)
+					{
+						System.out.println("Invalid Format. Type 'help' for more details.\n");
+						continue;
+					}
+					//for valid commands
+					if(dataArray.length == 4)
+					{
+						slaveIPAddress = dataArray[1];
+						targetIPAddress = dataArray[2];
+						portRange = dataArray[3];
+						System.out.println("tcpportscan is running in background.");
+						System.out.println("Results will be posted soon.....");
+						System.out.println("Meanwhile, other commands can be used. Type 'help' for available commands.");
+					}
+					//for all slaves (Example : tcpportscan all www.google.com 8000-9000)
+					if(slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						for(int i=0; i<clientList.size(); i++)
+						{
+							b.tcpPortScan(clientList.get(i), portRange, targetIPAddress);
+						}	
+					}
+					//for specific slaves (Example : tcpportscan 127.0.0.1:52317 www.google.com 8000-9000)
+					if(!slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						String line;
+						for(int i=0; i<clientList.size(); i++)
+						{
+							line = "/"+slaveIPAddress;
+							if(line.equalsIgnoreCase(clientList.get(i).getRemoteSocketAddress().toString()))
+							{
+								b.tcpPortScan(clientList.get(i), portRange, targetIPAddress);
+							}
+							else
+							{
+								System.out.println("No such slave is connected to the Master.");
+							}
+						}
+					}
+					continue;
+				}
+//--------------for anything else
 				else
 				{
 					System.out.println("> type help for more details \n");
