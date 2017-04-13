@@ -277,7 +277,7 @@ public class SlaveBot extends Thread
 					portScanSocket.close();
 				}catch(IOException e)
 				{
-
+				--------//empty catch block
 				}
 			}
 			m.printtcpPortScan(activePorts);
