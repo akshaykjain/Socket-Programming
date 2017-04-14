@@ -82,6 +82,7 @@ public class MasterBot extends Thread
 //--printIpScan--------------------------------------------------------------------------------------------------------------------------------
 	void printIpScan (ArrayList<String> listOfResponsdedTarget)
 	{
+		System.out.println("Output for IP Scan.....");
 		if(listOfResponsdedTarget.size() == 0)
 		{
 			System.out.println("No servers responded to the ping request.");
@@ -91,10 +92,12 @@ public class MasterBot extends Thread
 			System.out.println(listOfResponsdedTarget);
 		}
 		System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
+		System.out.println(">");
 	}
 //--printtcpPoetScan---------------------------------------------------------------------------------------------------------------------------
 	void printtcpPortScan (ArrayList<String> activePorts)
 	{
+		System.out.println("Output for TCP Port Scan.....");
 		if(activePorts.size() == 0)
 		{
 			System.out.println("No servers responded to the ping request.");
@@ -104,6 +107,7 @@ public class MasterBot extends Thread
 			System.out.println(activePorts);
 		}
 		System.out.println("Total Number of Active Ports : " + activePorts.size());
+		System.out.println(">");
 	}	
 //--main---------------------------------------------------------------------------------------------------------------------------------------
 	public static void main(String[] args) 
