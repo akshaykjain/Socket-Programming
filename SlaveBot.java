@@ -257,7 +257,7 @@ public class SlaveBot extends Thread
 				{
 					if(scan("127.0.0.1"));
 						listOfResponsdedTarget.add("127.0.0.1");
-					m.printIpScan(listOfResponsdedTarget, isGeo);
+					m.printIpScan(listOfResponsdedTarget);
 				}
 				else
 				{
@@ -294,10 +294,9 @@ public class SlaveBot extends Thread
 						}
 						ipString = sb.toString();
 						InetAddress ip = InetAddress.getByName(ipString);
-	
 						if(ip.isReachable(200) && isGeo)
-						{
-							listOfResponsdedTarget.add(ipString);
+						{	
+							String data = "";
 							File database = new File("src/GeoLite2-City.mmdb");
 							DatabaseReader reader = new DatabaseReader.Builder(database).build();
 							CityResponse response = reader.city(ip);
@@ -306,17 +305,17 @@ public class SlaveBot extends Thread
 							City city = response.getCity();
 							Postal postal = response.getPostal();
 							
-							System.out.println(ipString + ", Country: " + country.getName() 
+							data = ipString + ", Country: " + country.getName() 
 							+ ", State: " + subdivision.getName() + ", City: " + city.getName() 
-							+ ", Postal Code: " + postal.getCode() + ".");
+							+ ", Postal Code: " + postal.getCode() + ".";
+							listOfResponsdedTarget.add(data);
 						}
-						
-						else if(ip.isReachable(200))
+						else if(ip.isReachable(200) && !isGeo)
 						{
 							listOfResponsdedTarget.add(ipString);
 						}
 					}		
-					m.printIpScan(listOfResponsdedTarget, isGeo);
+					m.printIpScan(listOfResponsdedTarget);
 				}
 			} catch(IOException e)
 			{
