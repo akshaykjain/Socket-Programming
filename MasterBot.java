@@ -81,35 +81,23 @@ public class MasterBot extends Thread
 		}
 	}
 //--printIpScan--------------------------------------------------------------------------------------------------------------------------------
-	void printIpScan (ArrayList<String> listOfResponsdedTarget, boolean isGeoTrue)
+	void printIpScan (ArrayList<String> listOfResponsdedTarget) throws IOException
 	{
 		System.out.println("Output for IP Scan.....");
-		if(isGeoTrue)
+		if(listOfResponsdedTarget.size() == 0)
 		{
-			if(listOfResponsdedTarget.size() == 0)
-			{
-				System.out.println("No servers responded to the ping request.");
-			}
-			else
-			{
-				System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
-				System.out.println(">");
-			}
+			System.out.println("No servers responded to the ping request.");
 		}
-		else if(!isGeoTrue)
+		else
 		{
-			if(listOfResponsdedTarget.size() == 0)
+			for(int i = 0; i < listOfResponsdedTarget.size();i++)
 			{
-				System.out.println("No servers responded to the ping request.");
+				System.out.println(listOfResponsdedTarget.get(i));
 			}
-			else
-			{
-				System.out.println(listOfResponsdedTarget);
-				System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
-				System.out.println(">");
-			}
+			System.out.println("Total Number of Respondents : " + listOfResponsdedTarget.size());
+			System.out.println(">");
+			listOfResponsdedTarget.clear();
 		}
-		
 	}
 //--printtcpPoetScan---------------------------------------------------------------------------------------------------------------------------
 	void printtcpPortScan (ArrayList<String> activePorts)
