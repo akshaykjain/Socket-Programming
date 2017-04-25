@@ -33,8 +33,7 @@ public class MasterBot extends Thread
 		String data = "";
 
 		try 
-		{
-			
+		{	
 			File file = new File("clientLog.txt");
 			bw = new BufferedWriter(new FileWriter(file));
 			Date date = new Date();
